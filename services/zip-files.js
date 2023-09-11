@@ -7,6 +7,7 @@ const webpush = require('web-push');
 const { compressFileZip } = require("../helper/compress-file");
 const { downloadFile, deleteFileFirebase, uploadFile } = require("../helper/files-firebase");
 const { deleteFileTemp } = require("../helper/get-files-from-temp");
+const Suscription = require('../models/suscription');
 
 
 const zipFile = (fileName) => {
@@ -14,7 +15,7 @@ const zipFile = (fileName) => {
     let pathDestinationZip = null;
     let fileCompressedTemp = null;
 
-    downloadFile(pathDestination, fileName, subscriptionPushNotification = null)//Download file from firebase
+    downloadFile(pathDestination, fileName)//Download file from firebase
         .then(() => {
             return compressFileZip(fileName);//Compress file to zip
         })
@@ -26,15 +27,36 @@ const zipFile = (fileName) => {
             pathDestinationZip = `${process.env.PATH_FILES}/${fileCompressedTemp}`;
             return uploadFile(pathDestinationZip, fileCompressedTemp);//Upload file zip to firebase
         })
-        .then(() => {
+        .then(async () => {
             /**Push notification to client */
-            if (subscriptionPushNotification) {
-                const payload = JSON.stringify({
-                    title: 'Finished Operation',
-                    body: `${fileName} zipped successfully`
-                });
-                webpush.sendNotification(subscriptionPushNotification, payload).catch(console.log);
-            }
+            webpush.setVapidDetails('mailto:you@domain.com', process.env.VAPID_KEY_PUBLIC, process.env.VAPID_KEY_PRIVATE);
+            const suscripciones = await Suscription.find();
+            const notificationPayload = {
+                notification: {
+                    title: 'New Notification',
+                    body: `File ${fileName} zipped successfully`,
+                },
+            };
+
+            const promises = [];
+            suscripciones.forEach(subscription => {
+                promises.push(
+                    webpush.sendNotification(
+                        subscription,
+                        JSON.stringify(notificationPayload)
+                    )
+                )
+            });
+
+            Promise.all(promises).then(() => console.log('Notification sended'));
+
+            // if (subscriptionPushNotification) {
+            //     const payload = JSON.stringify({
+            //         title: 'Finished Operation',
+            //         body: `${fileName} zipped successfully`
+            //     });
+            //     webpush.sendNotification(subscriptionPushNotification, payload).catch(console.log);
+            // }
             /**End push notification */
             return deleteFileTemp([pathDestination, pathDestinationZip]);//Delete temporal files
         })

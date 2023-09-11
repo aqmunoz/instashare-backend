@@ -4,6 +4,7 @@ const { uploadFile, getFilesFirebase, downloadFile, deleteFileFirebase, getUrlFi
 const { compressFileZip } = require("../helper/compress-file");
 const { deleteFileTemp } = require("../helper/get-files-from-temp");
 const { zipFile } = require("../services/zip-files");
+const Suscription = require('../models/suscription');
 
 /**Add a file to firebase */
 const addFile = (req = request, resp = response) => {
@@ -182,9 +183,30 @@ const getFileUrl = (req = request, resp = response) => {
         });
 }
 
+const addSuscription = async (req = request, resp = response) => {
+    const suscriptionRequest = req.body;
+    try {
+        const suscription = new Suscription(suscriptionRequest);
+        await suscription.save();
+    
+        return resp.status(201).json({
+            success: true,
+            suscription
+        });
+        
+    } catch (error) {
+        console.log(error);
+        return resp.status(500).json({
+            success: false,
+            msg: 'Contact with administrator please'
+        });
+    }
+}
+
 module.exports = {
     addFile,
     getFiles,
     getFileUrl,
-    renameFile
+    renameFile,
+    addSuscription
 }

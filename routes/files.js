@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 
-const { addFile, getFiles, renameFile, getFileUrl } = require('../controllers/files');
+const { addFile, getFiles, renameFile, getFileUrl, addSuscription } = require('../controllers/files');
 const { uploader } = require('../helper/files-upload-server');
 
 router.post('/upload_file', [
@@ -20,6 +20,10 @@ router.post('/rename',
 
 router.post('/file_url', 
     getFileUrl
+);
+
+router.post('/suscription', 
+    addSuscription
 );
 
 module.exports = router;
